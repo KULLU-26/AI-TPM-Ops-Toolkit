@@ -13,8 +13,8 @@ if "GEMINI_API_KEY" not in st.secrets:
 # Configure the API
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# Use the most stable baseline model
-model = genai.GenerativeModel('gemini-1.5-flash')
+# USE THE ACTIVE MODEL (This is the one that worked perfectly for you earlier!)
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- 2. APP UI & TABS ---
 tab1, tab2, tab3 = st.tabs(["🪲 Bug Triage Classifier", "🧪 Test Case Gen", "⚠️ Sprint Risk Summariser"])
@@ -30,13 +30,11 @@ with tab1:
             with st.spinner("Analyzing..."):
                 prompt = f"Act as an expert IoT TPM. Read this bug report and classify its severity (P0-P3), domain (Firmware/Cloud/Mobile), and suggest a next step using the KASA Probe framework. Bug: {bug_input}"
                 try:
-                    # The Debug Trap
                     response = model.generate_content(prompt)
                     st.success("Triage Complete")
                     st.write(response.text)
                 except Exception as e:
-                    # If it fails, print the REAL error, not the redacted one
-                    st.error(f"🛑 GOOGLE API ERROR: {str(e)}")
+                    st.error(f"⚠️ Could not process request. If the bug contains terms like 'fatal' or 'kill', it may have tripped the AI safety filter. Error Details: {str(e)}")
 
 # --- TOOL 2: TEST CASE GENERATOR ---
 with tab2:
@@ -53,7 +51,7 @@ with tab2:
                     st.success("Test Plan Generated")
                     st.write(response.text)
                 except Exception as e:
-                    st.error(f"🛑 GOOGLE API ERROR: {str(e)}")
+                    st.error(f"⚠️ Could not process request. Error Details: {str(e)}")
 
 # --- TOOL 3: SPRINT RISK SUMMARISER ---
 with tab3:
@@ -70,4 +68,4 @@ with tab3:
                     st.success("Risk Analysis Complete")
                     st.write(response.text)
                 except Exception as e:
-                    st.error(f"🛑 GOOGLE API ERROR: {str(e)}")
+                    st.error(f"⚠️ Could not process request. Error Details: {str(e)}")
