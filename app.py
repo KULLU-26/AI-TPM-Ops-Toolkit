@@ -30,7 +30,7 @@ with tab1:
             with st.spinner("Analyzing..."):
                 prompt = f"Act as an expert IoT TPM. Read this bug report and classify its severity (P0-P3), domain (Firmware/Cloud/Mobile), and suggest a next step using the KASA Probe framework. Bug: {bug_input}"
                 try:
-                    response = model.generate_content(prompt)
+                    response = model.generate_content(prompt, generation_config={"temperature": 0.0})
                     st.success("Triage Complete")
                     st.write(response.text)
                 except Exception as e:
@@ -47,7 +47,7 @@ with tab2:
             with st.spinner("Generating..."):
                 prompt = f"Act as a Senior Validation Engineer. Generate 5 critical End-to-End test cases for this feature, focusing heavily on hardware-software edge cases like network drops and latency. Feature: {feature_input}"
                 try:
-                    response = model.generate_content(prompt)
+                    response = model.generate_content(prompt, generation_config={"temperature": 0.0})
                     st.success("Test Plan Generated")
                     st.write(response.text)
                 except Exception as e:
@@ -64,7 +64,7 @@ with tab3:
             with st.spinner("Analyzing..."):
                 prompt = f"Act as a Lead TPM. Analyze these sprint updates, identify cross-team blockers, highlight risks to the critical path, and give a health status. Notes: {sprint_input}"
                 try:
-                    response = model.generate_content(prompt)
+                    response = model.generate_content(prompt, generation_config={"temperature": 0.0})
                     st.success("Risk Analysis Complete")
                     st.write(response.text)
                 except Exception as e:
