@@ -1,9 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 
-# FIX 1: Import the strict Python Enums required by the SDK
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
-
 # --- CONFIGURATION & SECRETS ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -12,16 +9,16 @@ except KeyError:
     st.error("⚠️ API Key missing. Please add GEMINI_API_KEY to your Streamlit secrets.")
     st.stop()
 
-# FIX 2: Use the correct, actually existing Google model
-model = genai.GenerativeModel('gemini-2.0-flash')
+# THE FIX: This is the correct, stable production model
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# FIX 3: Use the proper Enum mapping for the safety settings
-custom_safety = {
-    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-}
+# THE FIX: The simplest, most stable syntax for disabling filters
+custom_safety = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+]
 
 # --- APP UI ---
 st.set_page_config(page_title="TPM Ops Toolkit", layout="wide")
@@ -37,7 +34,7 @@ with tab1:
     
     if st.button("Triage Bug"):
         if not bug_input.strip():
-            st.error("⚠️ Please paste a bug description first.")
+            st.warning("⚠️ Please paste a bug description first.")
         else:
             with st.spinner("Analyzing cross-stack impact..."):
                 prompt = f"""
@@ -60,7 +57,7 @@ with tab2:
     
     if st.button("Generate Test Plan"):
         if not feature_input.strip():
-            st.error("⚠️ Please describe a feature first.")
+            st.warning("⚠️ Please describe a feature first.")
         else:
             with st.spinner("Generating hardware/software edge cases..."):
                 prompt = f"""
@@ -79,7 +76,7 @@ with tab3:
     
     if st.button("Analyze Sprint Risks"):
         if not sprint_input.strip():
-            st.error("⚠️ Please paste sprint notes first.")
+            st.warning("⚠️ Please paste sprint notes first.")
         else:
             with st.spinner("Identifying dependencies..."):
                 prompt = f"""
@@ -89,6 +86,4 @@ with tab3:
                 2. Highlight any direct risks to the critical path.
                 3. Provide an overall sprint health status.
                 """
-                response = model.generate_content(prompt, safety_settings=custom_safety)
-                st.success("Risk Analysis Complete")
-                st.write(response.text)
+                response = model.generate_content
