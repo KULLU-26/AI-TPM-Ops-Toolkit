@@ -30,9 +30,15 @@ with tab1:
             3. Provide a 1-sentence recommended next action for the engineering team.
             Output in clean bullet points.
             """
-            response = model.generate_content(prompt)
-            st.success("Triage Complete")
-            st.write(response.text)
+            response = model.generate_content(
+                prompt,
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                ]
+            )
 
 # --- TOOL 2: TEST CASE GENERATOR (M63 W2 Inspired) ---
 with tab2:
