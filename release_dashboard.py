@@ -20,18 +20,26 @@ with st.sidebar:
     pr_weight = st.slider("Stale PR Penalty", 1, 10, 2)
     
 # --- GITHUB API DATA FETCHING ---
-@st.cache_data(ttl=300) # Caches data for 5 mins to avoid GitHub rate limits
+# --- GITHUB API DATA FETCHING ---
+@st.cache_data(ttl=300) 
 def fetch_github_data(repo):
     api_url = f"https://api.github.com/repos/{repo}"
     pulls_url = f"https://api.github.com/repos/{repo}/pulls?state=open"
     issues_url = f"https://api.github.com/repos/{repo}/issues?state=open&labels=bug"
     
+    # THE FIX: Attach the GitHub Token from Streamlit Secrets
+    headers = {}
+    if "GITHUB_TOKEN" in st.secrets:
+        headers["Authorization"] = f"token {st.secrets['GITHUB_TOKEN']}"
+    
     try:
-        repo_data = requests.get(api_url).json()
-        prs = requests.get(pulls_url).json()
-        bugs = requests.get(issues_url).json()
+        # Pass the headers into the request
+        repo_data = requests.get(api_url, headers=headers).json()
+        prs = requests.get(pulls_url, headers=headers).json()
+        bugs = requests.get(issues_url, headers=headers).json()
         
-        if 'message' in repo_data:
+        # If GitHub still returns an error message (like a typo in the repo name)
+        if 'message' in repo_data and 'Not Found' in repo_data['message']:
             return None, None, None
             
         return repo_data, prs, bugs
