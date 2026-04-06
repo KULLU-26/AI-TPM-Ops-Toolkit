@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import plotly.graph_objects as go
-from datetime import datetime
 
 # --- UI & CONFIG ---
 st.set_page_config(page_title="Release Intelligence Dashboard", layout="wide")
@@ -15,11 +14,10 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Release Criteria (Weights)**")
     
-    # THE FIX: We now capture the slider values into variables
+    # FIX 1: Capturing the slider values dynamically
     bug_weight = st.slider("Bug Penalty Weight", 1, 20, 15)
     pr_weight = st.slider("Stale PR Penalty", 1, 10, 2)
     
-# --- GITHUB API DATA FETCHING ---
 # --- GITHUB API DATA FETCHING ---
 @st.cache_data(ttl=300) 
 def fetch_github_data(repo):
@@ -27,18 +25,16 @@ def fetch_github_data(repo):
     pulls_url = f"https://api.github.com/repos/{repo}/pulls?state=open"
     issues_url = f"https://api.github.com/repos/{repo}/issues?state=open&labels=bug"
     
-    # THE FIX: Attach the GitHub Token from Streamlit Secrets
+    # FIX 2: Securely attaching the GitHub Token
     headers = {}
     if "GITHUB_TOKEN" in st.secrets:
         headers["Authorization"] = f"token {st.secrets['GITHUB_TOKEN']}"
     
     try:
-        # Pass the headers into the request
         repo_data = requests.get(api_url, headers=headers).json()
         prs = requests.get(pulls_url, headers=headers).json()
         bugs = requests.get(issues_url, headers=headers).json()
         
-        # If GitHub still returns an error message (like a typo in the repo name)
         if 'message' in repo_data and 'Not Found' in repo_data['message']:
             return None, None, None
             
@@ -51,18 +47,16 @@ with st.spinner("Ingesting live telemetry from GitHub..."):
 
 # --- TPM SCORING ALGORITHM ---
 if repo_info is not None:
-    # 1. Calculate Metrics
     stars = repo_info.get("stargazers_count", 0)
     pr_count = len(open_prs) if isinstance(open_prs, list) else 0
     bug_count = len(open_bugs) if isinstance(open_bugs, list) else 0
     
-    # THE FIX: Multiply the counts by the dynamic slider variables, not hardcoded numbers
+    # FIX 3: Using the dynamic slider variables in the math, not hardcoded numbers
     base_score = 100
     bug_penalty_total = bug_count * bug_weight
     pr_penalty_total = pr_count * pr_weight
     
     health_score = base_score - bug_penalty_total - pr_penalty_total
-    # Bound the score between 0 and 100
     health_score = max(0, min(100, health_score))
     
     # Determine Status
@@ -77,7 +71,6 @@ if repo_info is not None:
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        # Plotly Executive Gauge Chart
         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
             value = health_score,
@@ -103,7 +96,6 @@ if repo_info is not None:
         st.markdown("Real-time signals ingested via GitHub REST API.")
         
         m1, m2, m3 = st.columns(3)
-        # UI Upgrade: Shows exactly how many points are being deducted under the metrics
         m1.metric("Open Release-Blocking Bugs", f"{bug_count}", f"-{bug_penalty_total} pts" if bug_count > 0 else "Clear")
         m2.metric("Open PR Backlog", f"{pr_count}", f"-{pr_penalty_total} pts")
         m3.metric("Repo Stars (Scale)", f"{stars:,}")
@@ -118,4 +110,4 @@ if repo_info is not None:
             st.success("✅ **System Stable:** Bug count is within SLO thresholds. Integration velocity is stable. Authorized for production deployment.")
 
 else:
-    st.error("Could not fetch data. Please check the repo format (e.g., 'facebook/react') or wait 60 minutes if GitHub API is rate-limited.")
+    st.error("Could not fetch data. Please check the repo format (e.g., 'facebook/react') or check your GitHub Token.")
