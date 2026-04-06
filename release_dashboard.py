@@ -14,8 +14,10 @@ with st.sidebar:
     repo_input = st.text_input("GitHub Repo (Format: owner/repo)", value="streamlit/streamlit")
     st.markdown("---")
     st.markdown("**Release Criteria (Weights)**")
-    st.slider("Bug Penalty Weight", 1, 10, 5)
-    st.slider("Stale PR Penalty", 1, 10, 2)
+    
+    # THE FIX: We now capture the slider values into variables
+    bug_weight = st.slider("Bug Penalty Weight", 1, 20, 15)
+    pr_weight = st.slider("Stale PR Penalty", 1, 10, 2)
     
 # --- GITHUB API DATA FETCHING ---
 @st.cache_data(ttl=300) # Caches data for 5 mins to avoid GitHub rate limits
@@ -29,7 +31,6 @@ def fetch_github_data(repo):
         prs = requests.get(pulls_url).json()
         bugs = requests.get(issues_url).json()
         
-        # GitHub API returns dict with 'message' if repo is not found or rate limited
         if 'message' in repo_data:
             return None, None, None
             
@@ -47,13 +48,12 @@ if repo_info is not None:
     pr_count = len(open_prs) if isinstance(open_prs, list) else 0
     bug_count = len(open_bugs) if isinstance(open_bugs, list) else 0
     
-    # 2. The Google TPM Launch Formula
-    # Start with 100%. Deduct 15 points per critical bug. Deduct 2 points per open PR backlog.
+    # THE FIX: Multiply the counts by the dynamic slider variables, not hardcoded numbers
     base_score = 100
-    bug_penalty = bug_count * 15
-    pr_penalty = pr_count * 2
+    bug_penalty_total = bug_count * bug_weight
+    pr_penalty_total = pr_count * pr_weight
     
-    health_score = base_score - bug_penalty - pr_penalty
+    health_score = base_score - bug_penalty_total - pr_penalty_total
     # Bound the score between 0 and 100
     health_score = max(0, min(100, health_score))
     
@@ -95,8 +95,9 @@ if repo_info is not None:
         st.markdown("Real-time signals ingested via GitHub REST API.")
         
         m1, m2, m3 = st.columns(3)
-        m1.metric("Open Release-Blocking Bugs", f"{bug_count}", "- Immediate Action Required" if bug_count > 0 else "Clear")
-        m2.metric("Open PR Backlog", f"{pr_count}", "Integration Risk")
+        # UI Upgrade: Shows exactly how many points are being deducted under the metrics
+        m1.metric("Open Release-Blocking Bugs", f"{bug_count}", f"-{bug_penalty_total} pts" if bug_count > 0 else "Clear")
+        m2.metric("Open PR Backlog", f"{pr_count}", f"-{pr_penalty_total} pts")
         m3.metric("Repo Stars (Scale)", f"{stars:,}")
         
         st.markdown("---")
